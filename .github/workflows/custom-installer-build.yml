@@ -1,0 +1,73 @@
+name: Custom installer builds
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+    inputs:
+      use-sccache:
+        description: "Use sccache"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  buildid:
+    name: Generate build ID
+    runs-on: ubuntu-latest
+    outputs:
+      buildids: ${{ steps.get.outputs.bid }}
+    steps:
+      - id: get
+        shell: bash
+        run: echo "bid=$(date +'%Y%m%d%H%M%S')" >> "$GITHUB_OUTPUT"
+
+  build-data:
+    name: Read build data
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.data.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read Twilight version
+        id: data
+        shell: bash
+        run: |
+          version="$(node -pe "require('./surfer.json').brands.twilight.release.displayVersion")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  windows:
+    name: Windows installer and update package
+    uses: ./.github/workflows/windows-release-build.yml
+    needs: [build-data, buildid]
+    permissions:
+      contents: read
+    secrets: inherit
+    with:
+      build-version: ${{ needs.build-data.outputs.version }}
+      generate-pgo: false
+      disable-pgo: true
+      release-branch: twilight
+      MOZ_BUILD_DATE: ${{ needs.buildid.outputs.buildids }}
+      use-sccache: ${{ inputs.use-sccache || false }}
+
+  macos:
+    name: macOS DMG packages
+    uses: ./.github/workflows/macos-release-build.yml
+    needs: [build-data, buildid]
+    permissions:
+      contents: read
+    secrets: inherit
+    with:
+      build-version: ${{ needs.build-data.outputs.version }}
+      generate-pgo: false
+      disable-pgo: true
+      release-branch: twilight
+      MOZ_BUILD_DATE: ${{ needs.buildid.outputs.buildids }}
+      use-sccache: ${{ inputs.use-sccache || false }}

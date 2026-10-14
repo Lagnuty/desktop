@@ -1,0 +1,20 @@
+diff --git a/devtools/client/aboutdebugging/src/actions/debug-targets.js b/devtools/client/aboutdebugging/src/actions/debug-targets.js
+index e4acc934e2b2c5efce69c4c6997a346a6c467af4..644ee1d9d82092df13891bf23e9a857331490fdf 100644
+--- a/devtools/client/aboutdebugging/src/actions/debug-targets.js
++++ b/devtools/client/aboutdebugging/src/actions/debug-targets.js
+@@ -134,7 +134,14 @@ function installTemporaryExtension() {
+     dispatch({ type: TEMPORARY_EXTENSION_INSTALL_START });
+     const file = await openTemporaryExtension(window, message);
+     try {
+-      await AddonManager.installTemporaryAddon(file);
++      const install = await AddonManager.getInstallForFile(file, null, {
++        source: "about:debugging",
++        method: "install-from-sources",
++      });
++      if (!install) {
++        throw new Error(`No install available for ${file.path}`);
++      }
++      await install.install();
+       dispatch({ type: TEMPORARY_EXTENSION_INSTALL_SUCCESS });
+     } catch (e) {
+       dispatch({ type: TEMPORARY_EXTENSION_INSTALL_FAILURE, error: e });
