@@ -36,7 +36,7 @@ on:
 jobs:
   mac-build:
     name: Build macOS - ${{ matrix.arch }}
-    runs-on: 'blacksmith-8vcpu-ubuntu-2404'
+    runs-on: ubuntu-latest
     env:
       SCCACHE_GHA_ENABLED: ${{ inputs.use-sccache && 'true' || 'false' }}
       CARGO_TERM_COLOR: always
@@ -59,7 +59,7 @@ jobs:
           token: ${{ secrets.DEPLOY_KEY }}
 
       - name: Setup Node.js
-        uses: useblacksmith/setup-node@v5
+        uses: actions/setup-node@v4
         with:
           node-version-file: ".nvmrc"
 
@@ -97,7 +97,7 @@ jobs:
         env:
           SEGMENT_DOWNLOAD_TIMEOUT_MINS: 5
         id: cache-mac-cross
-        uses: useblacksmith/cache@v5
+        uses: actions/cache@v4
         with:
           path: ${HOME}/mac-cross
           key: mac-cross
