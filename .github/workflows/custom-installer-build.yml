@@ -71,3 +71,41 @@ jobs:
       release-branch: twilight
       MOZ_BUILD_DATE: ${{ needs.buildid.outputs.buildids }}
       use-sccache: ${{ inputs.use-sccache || false }}
+
+  publish-macos:
+    name: Publish permanent macOS downloads
+    needs: [build-data, buildid, macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download macOS DMGs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: zen-*-apple-darwin-dist.dmg
+          path: dist
+          merge-multiple: true
+
+      - name: Verify both macOS architectures
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s dist/zen-x86_64-apple-darwin-dist.dmg
+          test -s dist/zen-aarch64-apple-darwin-dist.dmg
+
+      - name: Publish DMGs to GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BUILD_ID: ${{ needs.buildid.outputs.buildids }}
+          BUILD_VERSION: ${{ needs.build-data.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "custom-macos-${BUILD_ID}" \
+            dist/zen-x86_64-apple-darwin-dist.dmg \
+            dist/zen-aarch64-apple-darwin-dist.dmg \
+            --target "$GITHUB_SHA" \
+            --title "Zen Twilight ${BUILD_VERSION} macOS (${BUILD_ID})" \
+            --notes "macOS Intel and Apple Silicon DMGs built from ${GITHUB_SHA}." \
+            --prerelease

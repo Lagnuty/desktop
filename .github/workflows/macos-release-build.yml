@@ -223,7 +223,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: ${{ !inputs.generate-pgo }}
         with:
-          retention-days: 1
+          retention-days: 7
           name: zen-${{ matrix.arch }}-apple-darwin-dist.dmg
           path: ./zen-${{ matrix.arch }}-apple-darwin-dist.dmg
 
